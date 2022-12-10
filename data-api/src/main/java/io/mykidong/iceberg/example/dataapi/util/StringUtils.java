@@ -33,4 +33,8 @@ public class StringUtils {
             throw new RuntimeException(e);
         }
     }
+
+    public static String getEnv(String key) {
+        return System.getenv("key");
+    }
 }

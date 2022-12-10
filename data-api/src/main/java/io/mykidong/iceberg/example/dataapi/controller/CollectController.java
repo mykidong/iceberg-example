@@ -9,6 +9,7 @@ import io.mykidong.iceberg.example.dataapi.domain.EventLogTranslator;
 import io.mykidong.iceberg.example.dataapi.domain.SparkStreamingInstance;
 import io.mykidong.iceberg.example.dataapi.util.JsonUtils;
 import io.mykidong.iceberg.example.dataapi.util.SparkStreamingContextCreator;
+import io.mykidong.iceberg.example.dataapi.util.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -187,9 +188,28 @@ public class CollectController  extends AbstractController {
 
             // s3 credential.
             String bucket = env.getProperty("s3.credential.bucket");
+            if(bucket.equals("")) {
+                bucket = StringUtils.getEnv("S3_CREDENTIAL_BUCKET");
+            }
+            LOG.info("bucket: {}", bucket);
+
             String accessKey = env.getProperty("s3.credential.accessKey");
+            if(accessKey.equals("")) {
+                accessKey = StringUtils.getEnv("S3_CREDENTIAL_ACCESS_KEY");
+            }
+            LOG.info("accessKey: {}", accessKey);
+
             String secretKey = env.getProperty("s3.credential.secretKey");
+            if(secretKey.equals("")) {
+                secretKey = StringUtils.getEnv("S3_CREDENTIAL_SECRET_kEY");
+            }
+            LOG.info("secretKey: {}", secretKey);
+
             String endpoint = env.getProperty("s3.credential.endpoint");
+            if(endpoint.equals("")) {
+                endpoint = StringUtils.getEnv("S3_CREDENTIAL_ENDPOINT");
+            }
+            LOG.info("endpoint: {}", endpoint);
 
             // user.
             String user = bucket;
@@ -237,9 +257,28 @@ public class CollectController  extends AbstractController {
 
             // s3 credential.
             String bucket = env.getProperty("s3.credential.bucket");
+            if(bucket.equals("")) {
+                bucket = StringUtils.getEnv("S3_CREDENTIAL_BUCKET");
+            }
+            LOG.info("bucket: {}", bucket);
+
             String accessKey = env.getProperty("s3.credential.accessKey");
+            if(accessKey.equals("")) {
+                accessKey = StringUtils.getEnv("S3_CREDENTIAL_ACCESS_KEY");
+            }
+            LOG.info("accessKey: {}", accessKey);
+
             String secretKey = env.getProperty("s3.credential.secretKey");
+            if(secretKey.equals("")) {
+                secretKey = StringUtils.getEnv("S3_CREDENTIAL_SECRET_kEY");
+            }
+            LOG.info("secretKey: {}", secretKey);
+
             String endpoint = env.getProperty("s3.credential.endpoint");
+            if(endpoint.equals("")) {
+                endpoint = StringUtils.getEnv("S3_CREDENTIAL_ENDPOINT");
+            }
+            LOG.info("endpoint: {}", endpoint);
 
             // user.
             String user = bucket;

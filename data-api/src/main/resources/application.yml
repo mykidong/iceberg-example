@@ -44,8 +44,8 @@ hive:
 
 s3:
   credential:
-    bucket: <bucket>
-    accessKey: <access-key>
-    secretKey: <secret-key>
-    endpoint: <endpoint>
+    bucket: ""
+    accessKey: ""
+    secretKey: ""
+    endpoint: ""
 
