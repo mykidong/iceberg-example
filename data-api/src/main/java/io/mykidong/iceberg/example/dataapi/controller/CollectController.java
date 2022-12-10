@@ -26,6 +26,7 @@ import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -42,7 +43,7 @@ import java.util.concurrent.ConcurrentMap;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @RestController
-public class CollectController  extends AbstractController {
+public class CollectController  extends AbstractController implements InitializingBean{
 
     private static Logger LOG = LoggerFactory.getLogger(CollectController.class);
 
@@ -57,6 +58,43 @@ public class CollectController  extends AbstractController {
 
     public static ConcurrentMap<String, Thread> threadMap;
     private static final Object lock = new Object();
+
+    private String hiveMetastoreUrl;
+    private String bucket;
+    private String accessKey;
+    private String secretKey;
+    private String endpoint;
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        // hive metastore.
+        hiveMetastoreUrl = env.getProperty("hive.metastore.url");
+
+        // s3 credential.
+        bucket = env.getProperty("s3.credential.bucket");
+        if(bucket.equals("")) {
+            bucket = StringUtils.getEnv("S3_CREDENTIAL_BUCKET");
+        }
+        LOG.info("bucket: {}", bucket);
+
+        accessKey = env.getProperty("s3.credential.accessKey");
+        if(accessKey.equals("")) {
+            accessKey = StringUtils.getEnv("S3_CREDENTIAL_ACCESS_KEY");
+        }
+        LOG.info("accessKey: {}", accessKey);
+
+        secretKey = env.getProperty("s3.credential.secretKey");
+        if(secretKey.equals("")) {
+            secretKey = StringUtils.getEnv("S3_CREDENTIAL_SECRET_kEY");
+        }
+        LOG.info("secretKey: {}", secretKey);
+
+        endpoint = env.getProperty("s3.credential.endpoint");
+        if(endpoint.equals("")) {
+            endpoint = StringUtils.getEnv("S3_CREDENTIAL_ENDPOINT");
+        }
+        LOG.info("endpoint: {}", endpoint);
+    }
 
     public static Thread singletonEventLogToIceberg(DisruptorHttpReceiver receiver,
                                                     String user,
@@ -150,6 +188,7 @@ public class CollectController  extends AbstractController {
         return t;
     }
 
+
     private static class StreamPair implements PairFunction<EventLog, String, String> {
         @Override
         public Tuple2<String, String> call(EventLog eventLog) throws Exception {
@@ -181,35 +220,6 @@ public class CollectController  extends AbstractController {
 
             // default catalog is iceberg.
             String catalog = "iceberg";
-
-
-            // run spark streaming job.
-            String hiveMetastoreUrl = env.getProperty("hive.metastore.url");
-
-            // s3 credential.
-            String bucket = env.getProperty("s3.credential.bucket");
-            if(bucket.equals("")) {
-                bucket = StringUtils.getEnv("S3_CREDENTIAL_BUCKET");
-            }
-            LOG.info("bucket: {}", bucket);
-
-            String accessKey = env.getProperty("s3.credential.accessKey");
-            if(accessKey.equals("")) {
-                accessKey = StringUtils.getEnv("S3_CREDENTIAL_ACCESS_KEY");
-            }
-            LOG.info("accessKey: {}", accessKey);
-
-            String secretKey = env.getProperty("s3.credential.secretKey");
-            if(secretKey.equals("")) {
-                secretKey = StringUtils.getEnv("S3_CREDENTIAL_SECRET_kEY");
-            }
-            LOG.info("secretKey: {}", secretKey);
-
-            String endpoint = env.getProperty("s3.credential.endpoint");
-            if(endpoint.equals("")) {
-                endpoint = StringUtils.getEnv("S3_CREDENTIAL_ENDPOINT");
-            }
-            LOG.info("endpoint: {}", endpoint);
 
             // user.
             String user = bucket;
@@ -251,34 +261,6 @@ public class CollectController  extends AbstractController {
 
             // table name.
             String tableName = schemaName + "." + table;
-
-            // hive metastore.
-            String hiveMetastoreUrl = env.getProperty("hive.metastore.url");
-
-            // s3 credential.
-            String bucket = env.getProperty("s3.credential.bucket");
-            if(bucket.equals("")) {
-                bucket = StringUtils.getEnv("S3_CREDENTIAL_BUCKET");
-            }
-            LOG.info("bucket: {}", bucket);
-
-            String accessKey = env.getProperty("s3.credential.accessKey");
-            if(accessKey.equals("")) {
-                accessKey = StringUtils.getEnv("S3_CREDENTIAL_ACCESS_KEY");
-            }
-            LOG.info("accessKey: {}", accessKey);
-
-            String secretKey = env.getProperty("s3.credential.secretKey");
-            if(secretKey.equals("")) {
-                secretKey = StringUtils.getEnv("S3_CREDENTIAL_SECRET_kEY");
-            }
-            LOG.info("secretKey: {}", secretKey);
-
-            String endpoint = env.getProperty("s3.credential.endpoint");
-            if(endpoint.equals("")) {
-                endpoint = StringUtils.getEnv("S3_CREDENTIAL_ENDPOINT");
-            }
-            LOG.info("endpoint: {}", endpoint);
 
             // user.
             String user = bucket;
