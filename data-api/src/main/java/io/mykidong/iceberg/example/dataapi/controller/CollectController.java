@@ -94,11 +94,6 @@ public class CollectController  extends AbstractController implements Initializi
             endpoint = StringUtils.getEnv("S3_CREDENTIAL_ENDPOINT");
         }
         LOG.info("endpoint: {}", endpoint);
-
-
-        System.getenv().forEach((k, v) -> {
-            LOG.info(k + ":" + v);
-        });
     }
 
     public static Thread singletonEventLogToIceberg(DisruptorHttpReceiver receiver,

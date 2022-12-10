@@ -6,6 +6,7 @@ import org.springframework.core.io.ClassPathResource;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 
 public class StringUtils {
 
@@ -35,6 +36,7 @@ public class StringUtils {
     }
 
     public static String getEnv(String key) {
-        return System.getenv("key");
+        Map<String, String> envMap = System.getenv();
+        return envMap.get(key);
     }
 }
