@@ -139,7 +139,7 @@ public class CollectController  extends AbstractController implements Initializi
             JavaStreamingContext ssc = sparkStreamingInstance.getJavaStreamingContext();
             SparkSession spark = sparkStreamingInstance.getSpark();
 
-            // receive event log from disruptor consumer.
+            // receive event log from spark http receiver.
             JavaDStream<EventLog> eventLogDStream = ssc.receiverStream(receiver);
 
             JavaPairDStream<String, String> tupleStream = eventLogDStream.mapToPair(new StreamPair());
@@ -233,7 +233,7 @@ public class CollectController  extends AbstractController implements Initializi
                     secretKey,
                     endpoint);
 
-            // public event log to disruptor.
+            // publish event log to disruptor.
             EventLogTranslator eventLogTranslator = new EventLogTranslator();
             eventLogTranslator.setUser(user);
             eventLogTranslator.setCatalog(catalog);
@@ -280,7 +280,7 @@ public class CollectController  extends AbstractController implements Initializi
             List<Map<String, Object>> rowList = excelToJson(file.getInputStream(), schemaName, tableName, spark, true);
 
             for(Map<String, Object> row : rowList) {
-                // public event log to disruptor.
+                // publish event log to disruptor.
                 EventLogTranslator eventLogTranslator = new EventLogTranslator();
                 eventLogTranslator.setUser(user);
                 eventLogTranslator.setCatalog(catalog);
