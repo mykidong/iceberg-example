@@ -1,7 +1,6 @@
 package io.mykidong.iceberg.example.dataapi.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
 import com.lmax.disruptor.dsl.Disruptor;
 import io.mykidong.iceberg.example.dataapi.component.DisruptorHttpReceiver;
 import io.mykidong.iceberg.example.dataapi.domain.EventLog;
@@ -14,15 +13,13 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.streaming.api.java.JavaDStream;
-import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,29 +139,30 @@ public class CollectController  extends AbstractController implements Initializi
             // receive event log from spark http receiver.
             JavaDStream<EventLog> eventLogDStream = ssc.receiverStream(receiver);
 
-            JavaPairDStream<String, String> tupleStream = eventLogDStream.mapToPair(new StreamPair());
-
-            JavaPairDStream<String, Iterable<String>> groupedStream = tupleStream.groupByKey();
-            groupedStream.foreachRDD(rdd -> {
+            eventLogDStream.foreachRDD(rdd -> {
                 try {
-                    if (rdd.isEmpty()) {
-                        return;
-                    }
-                    List<String> keys = rdd.keys().collect();
-                    if (keys.size() > 0) {
-                        String tableName = keys.get(0);
+                    List<EventLog> eventLogs = rdd.collect();
+                    Map<String, List<String>> eventMap = new HashMap<>();
+                    for (EventLog eventLog : eventLogs) {
+                        String schema = eventLog.getSchema();
+                        String table = eventLog.getTable();
+                        String tableName = "hive_prod." + schema + "." + table;
+                        String json = eventLog.getJson();
 
-                        JavaRDD<Iterable<String>> jsonRdd = rdd.values();
-
-                        List<Iterable<String>> jsonIterList = jsonRdd.collect();
-                        List<String> jsonList = new ArrayList<>();
-                        for (Iterable<String> jsonIter : jsonIterList) {
-                            jsonList.addAll(ImmutableList.copyOf(jsonIter));
+                        if (eventMap.containsKey(tableName)) {
+                            eventMap.get(tableName).add(json);
+                        } else {
+                            List<String> jsonList = new ArrayList<>();
+                            jsonList.add(json);
+                            eventMap.put(tableName, jsonList);
                         }
-                        LOG.info("json list to be written to iceberg: {}", jsonList.size());
+                    }
 
-                        Dataset<Row> df = spark.read().json(new JavaSparkContext(spark.sparkContext()).parallelize(jsonList));
+                    for (String tableName : eventMap.keySet()) {
+                        List<String> jsonList = eventMap.get(tableName);
                         StructType schema = spark.table(tableName).schema();
+                        Dataset<String> jsonDs = spark.createDataset(jsonList, Encoders.STRING());
+                        Dataset<Row> df = spark.read().json(jsonDs);
 
                         // write to iceberg table.
                         Dataset<Row> newDf = spark.createDataFrame(df.javaRDD(), schema);
@@ -172,6 +170,7 @@ public class CollectController  extends AbstractController implements Initializi
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
+                    System.err.println(e.getMessage());
                 }
             });
 
@@ -421,6 +420,13 @@ public class CollectController  extends AbstractController implements Initializi
 
 
     private static String createTable(String tableName, List<HeaderCell> headerCells) {
+        // sort by column name alphanumeric sequentially.
+        Collections.sort(headerCells, new Comparator<HeaderCell>() {
+            @Override
+            public int compare(HeaderCell o1, HeaderCell o2) {
+                return o1.getColumnName().compareTo(o2.getColumnName());
+            }
+        });
 
         int size = headerCells.size();
         int count = 0;
